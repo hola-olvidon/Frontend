@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { Recurrence, RecurrenceTipo, DIAS_SEMANA, formatRecurrence } from '@/lib/recurrence';
+import { Recurrence, RecurrenceTipo, DIAS_SEMANA, formatRecurrence, nextExecutionMs } from '@/lib/recurrence';
 import {
     Building2, Plus, Trash2, Search,
     ChevronDown, ChevronRight, Bell, Clock, Power, Eye, EyeOff, X, Music, Edit2, Repeat
@@ -48,6 +48,9 @@ export default function TenantsPage() {
     // Lista de audios
     const [audios, setAudios] = useState<AudioItem[]>([]);
     const [loadingAudios, setLoadingAudios] = useState(false);
+
+    // Zona horaria del servidor (para calcular la próxima ejecución)
+    const [zonaHoraria, setZonaHoraria] = useState('UTC');
 
     // Modal de Tenant (Crear / Editar)
     const [isTenantModalOpen, setIsTenantModalOpen] = useState(false);
@@ -103,6 +106,15 @@ export default function TenantsPage() {
         }
     };
 
+    const fetchConfig = async () => {
+        try {
+            const res = await api.get('/config');
+            setZonaHoraria(res.data.zonaHoraria || 'UTC');
+        } catch (err: any) {
+            console.error('Error al obtener la zona horaria:', err);
+        }
+    };
+
     const fetchTenantAlarms = async (tenantId: string, showLoading = true) => {
         try {
             if (showLoading) {
@@ -122,6 +134,7 @@ export default function TenantsPage() {
     useEffect(() => {
         fetchTenants();
         fetchAudios();
+        fetchConfig();
     }, []);
 
     const toggleTenantExpand = async (tenantId: string) => {
@@ -439,6 +452,24 @@ export default function TenantsPage() {
         t.nombre.toLowerCase().includes(search.toLowerCase())
     );
 
+    const nextLabel = (alarm: Alarm): string => {
+        try {
+            const ms = nextExecutionMs(alarm, Date.now(), zonaHoraria);
+            if (!ms) return '—';
+            return new Date(ms).toLocaleString(undefined, {
+                timeZone: zonaHoraria,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+            });
+        } catch {
+            return '—';
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -555,7 +586,9 @@ export default function TenantsPage() {
                                                                 <span className="text-xs font-bold uppercase text-slate-400 flex items-center gap-2">
                                                                     <Bell className="w-4 h-4 text-blue-400" /> Alarmas de {tenant.nombre}
                                                                 </span>
-                                                                <span className="text-xs text-slate-500">Total: {alarms.length}</span>
+                                                                <span className="text-xs text-slate-500">
+                                                                    Zona: {zonaHoraria} · Total: {alarms.length}
+                                                                </span>
                                                             </div>
 
                                                             {isAlarmsLoading ? (
@@ -587,6 +620,9 @@ export default function TenantsPage() {
                                                                                         {alarm.urlAudio}
                                                                                     </span>
                                                                                 </div>
+                                                                                <p className="text-xs text-blue-400 font-medium">
+                                                                                    Próxima ejecución: {nextLabel(alarm)}
+                                                                                </p>
                                                                             </div>
 
                                                                             <div className="flex items-center gap-2">
