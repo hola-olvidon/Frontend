@@ -34,7 +34,7 @@ function fmt(args: unknown[]): unknown[] {
 
 export const logger = {
   debug: (...args: unknown[]) => {
-    if (enabled("debug")) console.debug(...fmt(args));
+    if (enabled("debug")) console.log(...fmt(args));
   },
   info: (...args: unknown[]) => {
     if (enabled("info")) console.info(...fmt(args));
