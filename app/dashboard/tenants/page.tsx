@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { Recurrence, RecurrenceTipo, DIAS_SEMANA, formatRecurrence } from '@/lib/recurrence';
 import {
     Building2, Plus, Trash2, Search,
-    ChevronDown, ChevronRight, Bell, Clock, Power, Eye, EyeOff, X, Music, Edit2
+    ChevronDown, ChevronRight, Bell, Clock, Power, Eye, EyeOff, X, Music, Edit2, Repeat
 } from 'lucide-react';
 
 interface Tenant {
@@ -18,7 +19,8 @@ interface Alarm {
     id: string;
     tenantId: string;
     titulo: string;
-    horaProgramada: string;
+    horaProgramada: string | null;
+    recurrencia?: Recurrence | null;
     urlAudio: string;
     activa: boolean;
 }
@@ -28,6 +30,10 @@ interface AudioItem {
     nombreArchivo?: string;
     urlAudio: string;
 }
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 export default function TenantsPage() {
     const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -57,6 +63,18 @@ export default function TenantsPage() {
     const [tituloAlarm, setTituloAlarm] = useState('');
     const [horaAlarm, setHoraAlarm] = useState('');
     const [urlAudioAlarm, setUrlAudioAlarm] = useState('');
+
+    // Estado de recurrencia
+    const [recurrenceTipo, setRecurrenceTipo] = useState<RecurrenceTipo | 'una_vez'>('una_vez');
+    const [recurHora, setRecurHora] = useState('');
+    const [recurDiasSemana, setRecurDiasSemana] = useState<number[]>([]);
+    const [recurDiasMes, setRecurDiasMes] = useState<number[]>([]);
+    const [recurAnioMes, setRecurAnioMes] = useState(1);
+    const [recurAnioDia, setRecurAnioDia] = useState(1);
+    const [recurHoraInicio, setRecurHoraInicio] = useState('');
+    const [recurHoraFin, setRecurHoraFin] = useState('');
+    const [recurIntervaloMinutos, setRecurIntervaloMinutos] = useState(10);
+    const [recurFechaFin, setRecurFechaFin] = useState('');
 
     const [createLoading, setCreateLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
@@ -178,12 +196,51 @@ export default function TenantsPage() {
     };
 
     // Alarm Handlers
+    const resetRecurrenceForm = () => {
+        setRecurrenceTipo('una_vez');
+        setRecurHora('');
+        setRecurDiasSemana([]);
+        setRecurDiasMes([]);
+        setRecurAnioMes(1);
+        setRecurAnioDia(1);
+        setRecurHoraInicio('');
+        setRecurHoraFin('');
+        setRecurIntervaloMinutos(10);
+        setRecurFechaFin('');
+    };
+
+    const populateRecurrenceForm = (recurrence: Recurrence) => {
+        setRecurrenceTipo(recurrence.tipo);
+        setRecurFechaFin(recurrence.fechaFin || '');
+        if (recurrence.tipo === 'diaria') {
+            setRecurHora(recurrence.hora);
+        } else if (recurrence.tipo === 'semanal') {
+            setRecurHora(recurrence.hora);
+            setRecurDiasSemana(recurrence.diasSemana);
+        } else if (recurrence.tipo === 'mensual') {
+            setRecurHora(recurrence.hora);
+            setRecurDiasMes(recurrence.diasMes);
+        } else if (recurrence.tipo === 'anual') {
+            setRecurHora(recurrence.hora);
+            if (recurrence.fechas.length > 0) {
+                setRecurAnioMes(Number(recurrence.fechas[0].slice(0, 2)));
+                setRecurAnioDia(Number(recurrence.fechas[0].slice(3, 5)));
+            }
+        } else if (recurrence.tipo === 'intervalo') {
+            setRecurDiasSemana(recurrence.diasSemana);
+            setRecurHoraInicio(recurrence.horaInicio);
+            setRecurHoraFin(recurrence.horaFin);
+            setRecurIntervaloMinutos(recurrence.intervaloMinutos);
+        }
+    };
+
     const handleOpenCreateAlarmModal = (tenant: Tenant) => {
         setSelectedTenantForAlarm(tenant);
         setEditingAlarm(null);
         setTituloAlarm('');
         setHoraAlarm('');
         setUrlAudioAlarm('');
+        resetRecurrenceForm();
         setErrorMsg('');
         setIsAlarmModalOpen(true);
     };
@@ -193,8 +250,13 @@ export default function TenantsPage() {
         setEditingAlarm(alarm);
         setTituloAlarm(alarm.titulo);
 
-        // Formatear ISO string a YYYY-MM-DDTHH:mm para el input datetime-local
-        if (alarm.horaProgramada) {
+        resetRecurrenceForm();
+
+        if (alarm.recurrencia) {
+            populateRecurrenceForm(alarm.recurrencia);
+            setHoraAlarm('');
+        } else if (alarm.horaProgramada) {
+            // Formatear ISO string a YYYY-MM-DDTHH:mm para el input datetime-local
             const d = new Date(alarm.horaProgramada);
             const formattedDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
                 .toISOString()
@@ -209,46 +271,103 @@ export default function TenantsPage() {
         setIsAlarmModalOpen(true);
     };
 
+    const buildRecurrence = (): Recurrence | null => {
+        const fechaFin = recurFechaFin || undefined;
+        switch (recurrenceTipo) {
+            case 'diaria':
+                return { tipo: 'diaria', hora: recurHora, ...(fechaFin ? { fechaFin } : {}) };
+            case 'semanal':
+                return { tipo: 'semanal', diasSemana: recurDiasSemana, hora: recurHora, ...(fechaFin ? { fechaFin } : {}) };
+            case 'mensual':
+                return { tipo: 'mensual', diasMes: recurDiasMes, hora: recurHora, ...(fechaFin ? { fechaFin } : {}) };
+            case 'anual':
+                return {
+                    tipo: 'anual',
+                    fechas: [`${pad2(recurAnioMes)}-${pad2(recurAnioDia)}`],
+                    hora: recurHora,
+                    ...(fechaFin ? { fechaFin } : {}),
+                };
+            case 'intervalo':
+                return {
+                    tipo: 'intervalo',
+                    diasSemana: recurDiasSemana,
+                    horaInicio: recurHoraInicio,
+                    horaFin: recurHoraFin,
+                    intervaloMinutos: recurIntervaloMinutos,
+                    ...(fechaFin ? { fechaFin } : {}),
+                };
+            default:
+                return null;
+        }
+    };
+
+    const validateRecurrenceForm = (): boolean => {
+        if (recurrenceTipo === 'una_vez') return true;
+
+        if (recurrenceTipo === 'diaria' || recurrenceTipo === 'semanal' ||
+            recurrenceTipo === 'mensual' || recurrenceTipo === 'anual') {
+            if (!recurHora) { setErrorMsg('Selecciona la hora de la alarma'); return false; }
+        }
+        if (recurrenceTipo === 'semanal' || recurrenceTipo === 'intervalo') {
+            if (recurDiasSemana.length === 0) { setErrorMsg('Selecciona al menos un día de la semana'); return false; }
+        }
+        if (recurrenceTipo === 'mensual' && recurDiasMes.length === 0) {
+            setErrorMsg('Selecciona al menos un día del mes'); return false;
+        }
+        if (recurrenceTipo === 'intervalo') {
+            if (!recurHoraInicio || !recurHoraFin) { setErrorMsg('Indica la hora de inicio y fin del rango'); return false; }
+            if (recurHoraFin <= recurHoraInicio) { setErrorMsg('La hora de fin debe ser mayor que la de inicio'); return false; }
+            if (!recurIntervaloMinutos || recurIntervaloMinutos < 1) { setErrorMsg('El intervalo en minutos debe ser mayor a 0'); return false; }
+        }
+        return true;
+    };
+
     const handleSaveAlarm = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedTenantForAlarm || !tituloAlarm || !horaAlarm) return;
+        if (!selectedTenantForAlarm || !tituloAlarm) return;
+
+        if (!validateRecurrenceForm()) return;
 
         try {
             setCreateLoading(true);
             setErrorMsg('');
 
-            const parsedDate = new Date(horaAlarm);
-            if (isNaN(parsedDate.getTime())) {
-                setErrorMsg('Selecciona una fecha y hora válidas');
-                setCreateLoading(false);
-                return;
-            }
-
-            const isoDate = parsedDate.toISOString();
             const tenantId = selectedTenantForAlarm.id;
+            const payload: any = {
+                titulo: tituloAlarm.trim(),
+                urlAudio: urlAudioAlarm,
+            };
+
+            if (recurrenceTipo === 'una_vez') {
+                if (!horaAlarm) { setErrorMsg('Selecciona una fecha y hora'); setCreateLoading(false); return; }
+                const parsedDate = new Date(horaAlarm);
+                if (isNaN(parsedDate.getTime())) {
+                    setErrorMsg('Selecciona una fecha y hora válidas');
+                    setCreateLoading(false);
+                    return;
+                }
+                payload.horaProgramada = parsedDate.toISOString();
+                payload.recurrencia = null;
+            } else {
+                payload.recurrencia = buildRecurrence();
+            }
 
             if (editingAlarm) {
                 // Actualizar Alarma existente (PATCH)
-                const res = await api.patch(`/alarms/${editingAlarm.id}`, {
-                    titulo: tituloAlarm.trim(),
-                    horaProgramada: isoDate,
-                    urlAudio: urlAudioAlarm,
-                });
+                const res = await api.patch(`/alarms/${editingAlarm.id}`, payload);
 
                 // Actualizar en el estado local directamente
                 setTenantAlarms((prev) => ({
                     ...prev,
                     [tenantId]: (prev[tenantId] || []).map((a) =>
-                        a.id === editingAlarm.id ? { ...a, ...res.data, titulo: tituloAlarm.trim(), horaProgramada: isoDate, urlAudio: urlAudioAlarm } : a
+                        a.id === editingAlarm.id ? { ...a, ...res.data } : a
                     ),
                 }));
             } else {
                 // Crear nueva Alarma (POST)
                 const res = await api.post('/alarms', {
+                    ...payload,
                     tenantId,
-                    titulo: tituloAlarm.trim(),
-                    horaProgramada: isoDate,
-                    urlAudio: urlAudioAlarm,
                     activa: true,
                 });
 
@@ -262,6 +381,7 @@ export default function TenantsPage() {
             setTituloAlarm('');
             setHoraAlarm('');
             setUrlAudioAlarm('');
+            resetRecurrenceForm();
             setEditingAlarm(null);
             setIsAlarmModalOpen(false);
             setExpandedTenants((prev) => ({ ...prev, [tenantId]: true }));
@@ -456,7 +576,11 @@ export default function TenantsPage() {
                                                                                 <div className="flex items-center gap-4 text-xs text-slate-400">
                                                                                     <span className="flex items-center gap-1">
                                                                                         <Clock className="w-3.5 h-3.5 text-slate-500" />
-                                                                                        {new Date(alarm.horaProgramada).toLocaleString()}
+                                                                                        {alarm.recurrencia
+                                                            ? formatRecurrence(alarm.recurrencia)
+                                                            : alarm.horaProgramada
+                                                                ? new Date(alarm.horaProgramada).toLocaleString()
+                                                                : '—'}
                                                                                     </span>
                                                                                     <span className="truncate max-w-[200px] text-slate-500 flex items-center gap-1">
                                                                                         <Music className="w-3 h-3 text-slate-500" />
@@ -638,16 +762,182 @@ export default function TenantsPage() {
 
                             <div>
                                 <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                                    Fecha y Hora Programada
+                                    Repetición
                                 </label>
-                                <input
-                                    type="datetime-local"
-                                    required
-                                    value={horaAlarm}
-                                    onChange={(e) => setHoraAlarm(e.target.value)}
+                                <select
+                                    value={recurrenceTipo}
+                                    onChange={(e) => setRecurrenceTipo(e.target.value as RecurrenceTipo | 'una_vez')}
                                     className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-                                />
+                                >
+                                    <option value="una_vez">Una sola vez</option>
+                                    <option value="diaria">Diaria (todos los días)</option>
+                                    <option value="semanal">Semanal (días concretos)</option>
+                                    <option value="mensual">Mensual (día del mes)</option>
+                                    <option value="anual">Anual (fecha del año)</option>
+                                    <option value="intervalo">Intervalo (cada N minutos)</option>
+                                </select>
                             </div>
+
+                            {recurrenceTipo === 'una_vez' && (
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                                        Fecha y Hora Programada
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        value={horaAlarm}
+                                        onChange={(e) => setHoraAlarm(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+                            )}
+
+                            {(recurrenceTipo === 'diaria' || recurrenceTipo === 'semanal' ||
+                                recurrenceTipo === 'mensual' || recurrenceTipo === 'anual') && (
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                                        Hora
+                                    </label>
+                                    <input
+                                        type="time"
+                                        required
+                                        value={recurHora}
+                                        onChange={(e) => setRecurHora(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+                            )}
+
+                            {(recurrenceTipo === 'semanal' || recurrenceTipo === 'intervalo') && (
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                                        Días de la semana
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {DIAS_SEMANA.map((dia) => {
+                                            const active = recurDiasSemana.includes(dia.value);
+                                            return (
+                                                <button
+                                                    key={dia.value}
+                                                    type="button"
+                                                    onClick={() => setRecurDiasSemana((prev) => active ? prev.filter((d) => d !== dia.value) : [...prev, dia.value])}
+                                                    className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${active ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
+                                                >
+                                                    {dia.short}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {recurrenceTipo === 'mensual' && (
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                                        Días del mes
+                                    </label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {Array.from({ length: 31 }, (_, i) => i + 1).map((dia) => {
+                                            const active = recurDiasMes.includes(dia);
+                                            return (
+                                                <button
+                                                    key={dia}
+                                                    type="button"
+                                                    onClick={() => setRecurDiasMes((prev) => active ? prev.filter((d) => d !== dia) : [...prev, dia])}
+                                                    className={`w-8 h-8 rounded-md text-xs font-medium border transition-colors ${active ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
+                                                >
+                                                    {dia}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {recurrenceTipo === 'anual' && (
+                                <div className="flex gap-2">
+                                    <div className="flex-1">
+                                        <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">Mes</label>
+                                        <select
+                                            value={recurAnioMes}
+                                            onChange={(e) => setRecurAnioMes(Number(e.target.value))}
+                                            className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                        >
+                                            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                                                <option key={m} value={m}>{MESES[m - 1]}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">Día</label>
+                                        <select
+                                            value={recurAnioDia}
+                                            onChange={(e) => setRecurAnioDia(Number(e.target.value))}
+                                            className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                        >
+                                            {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                                                <option key={d} value={d}>{d}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
+                            {recurrenceTipo === 'intervalo' && (
+                                <>
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">Desde</label>
+                                            <input
+                                                type="time"
+                                                required
+                                                value={recurHoraInicio}
+                                                onChange={(e) => setRecurHoraInicio(e.target.value)}
+                                                className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">Hasta</label>
+                                            <input
+                                                type="time"
+                                                required
+                                                value={recurHoraFin}
+                                                onChange={(e) => setRecurHoraFin(e.target.value)}
+                                                className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                                            Cada (minutos)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={1440}
+                                            required
+                                            value={recurIntervaloMinutos}
+                                            onChange={(e) => setRecurIntervaloMinutos(Number(e.target.value))}
+                                            className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            {recurrenceTipo !== 'una_vez' && (
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                                        Fecha fin (opcional)
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={recurFechaFin}
+                                        onChange={(e) => setRecurFechaFin(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Layers, Bell, FileAudio, LayoutDashboard } from 'lucide-react';
+import { Layers, Bell, FileAudio, LayoutDashboard, Settings } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
     { name: 'Tenants', href: '/dashboard/tenants', icon: Layers },
     /* { name: 'Alarmas', href: '/dashboard/alarms', icon: Bell }, */
     { name: 'Audios', href: '/dashboard/media', icon: FileAudio },
+    { name: 'Configuración', href: '/dashboard/config', icon: Settings },
 ];
 
 export default function Sidebar() {
