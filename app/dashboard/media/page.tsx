@@ -2,7 +2,67 @@
 
 import { useEffect, useState } from "react";
 import { mediaApi, AudioItem } from "@/lib/media";
-import { Music, Upload, Trash2, Volume2, AlertCircle, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
+import { Music, Upload, Trash2, Volume2, AlertCircle, Loader2, Play } from "lucide-react";
+
+function AudioPlayer({ fileKey }: { fileKey: string }) {
+    const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(false);
+
+    // Revocar el object URL al desmontar o al cambiar de audio
+    useEffect(() => {
+        return () => {
+            if (audioUrl) URL.revokeObjectURL(audioUrl);
+        };
+    }, [audioUrl]);
+
+    const handlePlay = async () => {
+        if (!fileKey || loading) return;
+        setLoading(true);
+        setError(false);
+        try {
+            const res = await api.get(
+                `/media/audios/${encodeURIComponent(fileKey)}`,
+                { responseType: "blob" },
+            );
+            const url = URL.createObjectURL(res.data as Blob);
+            setAudioUrl(url);
+        } catch {
+            setError(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!fileKey) {
+        return <div className="text-xs text-slate-500">Audio no disponible</div>;
+    }
+    if (error) {
+        return <div className="text-xs text-red-400">No se pudo cargar el audio</div>;
+    }
+    if (audioUrl) {
+        return (
+            <audio
+                controls
+                autoPlay
+                src={audioUrl}
+                className="w-full h-8 rounded mt-1 accent-blue-500"
+            />
+        );
+    }
+    return (
+        <button
+            type="button"
+            onClick={handlePlay}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg transition-colors disabled:opacity-50"
+        >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+            {loading ? "Cargando..." : "Reproducir"}
+        </button>
+    );
+}
 
 export default function MediaPage() {
     const [audios, setAudios] = useState<AudioItem[]>([]);
@@ -118,7 +178,7 @@ export default function MediaPage() {
     };
 
     return (
-        <div className="space-y-6 p-6 text-slate-100">
+        <div className="space-y-6 text-slate-100">
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -139,7 +199,7 @@ export default function MediaPage() {
             )}
 
             {/* Zona de Carga / Upload Card con Drag and Drop nativo */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl">
                 <label className="block text-sm font-semibold uppercase text-slate-400 mb-3">
                     Subir Nuevo Audio
                 </label>
@@ -182,7 +242,7 @@ export default function MediaPage() {
             </div>
 
             {/* Lista de Audios */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl space-y-4">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
                     <Music className="w-5 h-5 text-blue-400" />
                     Biblioteca de Audios subidos ({audios.length})
@@ -216,11 +276,7 @@ export default function MediaPage() {
                                             </p>
                                         </div>
 
-                                        <audio
-                                            controls
-                                            src={audio.urlAudio}
-                                            className="w-full h-8 rounded mt-1 accent-blue-500"
-                                        />
+                                        <AudioPlayer fileKey={audio.nombreArchivo ?? ""} />
                                     </div>
 
                                     <div className="flex justify-end pt-2 border-t border-slate-800/80">

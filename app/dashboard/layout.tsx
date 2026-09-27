@@ -12,6 +12,7 @@ export default function DashboardLayout({
 }) {
     const router = useRouter();
     const [authorized, setAuthorized] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('admin_token');
@@ -32,13 +33,13 @@ export default function DashboardLayout({
 
     return (
         <div className="flex min-h-screen bg-slate-950 text-slate-100">
-            {/* Sidebar Lateral Fijo */}
-            <Sidebar />
+            {/* Sidebar Lateral Fijo (en desktop) / Drawer (en mobile) */}
+            <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             {/* Área Contenido Principal */}
             <div className="flex-1 flex flex-col min-w-0">
-                <Header />
-                <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+                <Header onMenuClick={() => setSidebarOpen(true)} />
+                <main className="flex-1 p-4 sm:p-6 overflow-y-auto">{children}</main>
             </div>
         </div>
     );
