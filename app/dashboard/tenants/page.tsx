@@ -485,7 +485,7 @@ export default function TenantsPage() {
 
                 <button
                     onClick={handleOpenCreateTenantModal}
-                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-lg shadow-blue-600/20"
+                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-lg shadow-blue-600/20 w-full sm:w-auto"
                 >
                     <Plus className="w-5 h-5" />
                     <span>Nuevo Tenant</span>
@@ -518,9 +518,9 @@ export default function TenantsPage() {
                             <thead className="bg-slate-800/60 text-slate-400 uppercase text-xs border-b border-slate-800">
                                 <tr>
                                     <th className="w-10 px-4 py-4"></th>
-                                    <th className="px-6 py-4 font-semibold">Nombre</th>
-                                    <th className="px-6 py-4 font-semibold">ID del Tenant</th>
-                                    <th className="px-6 py-4 font-semibold text-right">Acciones</th>
+                                    <th className="px-3 sm:px-6 py-4 font-semibold">Nombre</th>
+                                    <th className="hidden md:table-cell px-6 py-4 font-semibold">ID del Tenant</th>
+                                    <th className="px-4 py-4 font-semibold text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
@@ -545,42 +545,48 @@ export default function TenantsPage() {
                                                         )}
                                                     </button>
                                                 </td>
-                                                <td className="px-6 py-4 font-medium text-white flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold">
-                                                        {tenant.nombre.charAt(0).toUpperCase()}
+                                                <td className="px-3 sm:px-6 py-4 font-medium text-white">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="w-9 h-9 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold shrink-0">
+                                                            {tenant.nombre.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <span className="truncate">{tenant.nombre}</span>
                                                     </div>
-                                                    {tenant.nombre}
                                                 </td>
-                                                <td className="px-6 py-4 font-mono text-xs text-slate-400">{tenant.id}</td>
-                                                <td className="px-6 py-4 text-right space-x-2">
-                                                    <button
-                                                        onClick={() => handleOpenCreateAlarmModal(tenant)}
-                                                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg transition-colors"
-                                                    >
-                                                        <Bell className="w-3.5 h-3.5" /> Nueva Alarma
-                                                    </button>
+                                                <td className="hidden md:table-cell px-6 py-4 font-mono text-xs text-slate-400">{tenant.id}</td>
+                                                <td className="px-4 py-4">
+                                                    <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-wrap">
+                                                        <button
+                                                            onClick={() => handleOpenCreateAlarmModal(tenant)}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg transition-colors"
+                                                            title="Nueva Alarma"
+                                                        >
+                                                            <Bell className="w-3.5 h-3.5" />
+                                                            <span className="hidden sm:inline">Nueva Alarma</span>
+                                                        </button>
 
-                                                    <button
-                                                        onClick={() => handleOpenEditTenantModal(tenant)}
-                                                        className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
-                                                        title="Editar Tenant"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
+                                                        <button
+                                                            onClick={() => handleOpenEditTenantModal(tenant)}
+                                                            className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                                                            title="Editar Tenant"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
 
-                                                    <button
-                                                        onClick={() => handleDeleteTenant(tenant.id, tenant.nombre)}
-                                                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                        title="Eliminar Tenant"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                        <button
+                                                            onClick={() => handleDeleteTenant(tenant.id, tenant.nombre)}
+                                                            className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                            title="Eliminar Tenant"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
 
                                             {isExpanded && (
                                                 <tr className="bg-slate-950/60 border-b border-slate-800">
-                                                    <td colSpan={4} className="p-4 pl-14">
+                                                    <td colSpan={4} className="p-3 sm:p-4 sm:pl-14">
                                                         <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-4 space-y-3">
                                                             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                                                                 <span className="text-xs font-bold uppercase text-slate-400 flex items-center gap-2">
@@ -602,11 +608,11 @@ export default function TenantsPage() {
                                                                     {alarms.map((alarm) => (
                                                                         <div
                                                                             key={alarm.id}
-                                                                            className="flex items-center justify-between bg-slate-800/40 border border-slate-800 rounded-lg p-3 hover:border-slate-700 transition-colors"
+                                                                            className="flex flex-col gap-3 bg-slate-800/40 border border-slate-800 rounded-lg p-3 hover:border-slate-700 transition-colors sm:flex-row sm:items-center sm:justify-between"
                                                                         >
-                                                                            <div className="space-y-1">
-                                                                                <p className="text-sm font-semibold text-white">{alarm.titulo}</p>
-                                                                                <div className="flex items-center gap-4 text-xs text-slate-400">
+                                                                            <div className="space-y-1 min-w-0 flex-1">
+                                                                                <p className="text-sm font-semibold text-white break-words">{alarm.titulo}</p>
+                                                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
                                                                                     <span className="flex items-center gap-1">
                                                                                         <Clock className="w-3.5 h-3.5 text-slate-500" />
                                                                                         {alarm.recurrencia
@@ -615,7 +621,7 @@ export default function TenantsPage() {
                                                                 ? new Date(alarm.horaProgramada).toLocaleString()
                                                                 : '—'}
                                                                                     </span>
-                                                                                    <span className="truncate max-w-[200px] text-slate-500 flex items-center gap-1">
+                                                                                    <span className="truncate max-w-full sm:max-w-[200px] text-slate-500 flex items-center gap-1">
                                                                                         <Music className="w-3 h-3 text-slate-500" />
                                                                                         {alarm.urlAudio}
                                                                                     </span>
@@ -625,7 +631,7 @@ export default function TenantsPage() {
                                                                                 </p>
                                                                             </div>
 
-                                                                            <div className="flex items-center gap-2">
+                                                                            <div className="flex items-center gap-2 shrink-0">
                                                                                 <button
                                                                                     onClick={() => handleToggleAlarm(alarm)}
                                                                                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${alarm.activa
@@ -673,7 +679,7 @@ export default function TenantsPage() {
             {/* MODAL: Crear / Editar Tenant */}
             {isTenantModalOpen && (
                 <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center border-b border-slate-800 pb-3">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                 {editingTenant ? 'Editar Tenant' : 'Crear Tenant'}
@@ -758,7 +764,7 @@ export default function TenantsPage() {
             {/* MODAL: Crear / Editar Alarma */}
             {isAlarmModalOpen && selectedTenantForAlarm && (
                 <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center border-b border-slate-800 pb-3">
                             <div>
                                 <h3 className="text-lg font-bold text-white flex items-center gap-2">

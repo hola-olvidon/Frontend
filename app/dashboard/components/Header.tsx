@@ -1,9 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 
-export default function Header() {
+interface HeaderProps {
+    onMenuClick: () => void;
+}
+
+export default function Header({ onMenuClick }: HeaderProps) {
     const router = useRouter();
 
     const handleLogout = () => {
@@ -12,9 +16,21 @@ export default function Header() {
     };
 
     return (
-        <header className="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between sticky top-0 z-10">
-            <div className="text-sm font-medium text-slate-400">
-                Panel de Control
+        <header className="h-14 sm:h-16 bg-slate-900 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-10">
+            <div className="flex items-center gap-3 min-w-0">
+                {/* Botón hamburguesa: solo visible en mobile */}
+                <button
+                    onClick={onMenuClick}
+                    className="lg:hidden p-2 -ml-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                    title="Abrir menú"
+                    aria-label="Abrir menú"
+                >
+                    <Menu className="w-5 h-5" />
+                </button>
+
+                <div className="text-sm font-medium text-slate-400 truncate">
+                    Panel de Control
+                </div>
             </div>
 
             <div className="flex items-center gap-4">
@@ -31,7 +47,7 @@ export default function Header() {
                     title="Cerrar Sesión"
                 >
                     <LogOut className="w-4 h-4" />
-                    <span>Salir</span>
+                    <span className="hidden sm:inline">Salir</span>
                 </button>
             </div>
         </header>

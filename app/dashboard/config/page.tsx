@@ -98,7 +98,7 @@ export default function ConfigPage() {
                 </div>
             )}
 
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl">
                 <form onSubmit={handleSave} className="space-y-4">
                     <div>
                         <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
@@ -128,7 +128,7 @@ export default function ConfigPage() {
                         <button
                             type="submit"
                             disabled={saving || loading}
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 w-full sm:w-auto"
                         >
                             {saving ? 'Guardando...' : 'Guardar zona horaria'}
                         </button>

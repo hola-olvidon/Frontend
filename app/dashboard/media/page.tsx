@@ -178,7 +178,7 @@ export default function MediaPage() {
     };
 
     return (
-        <div className="space-y-6 p-6 text-slate-100">
+        <div className="space-y-6 text-slate-100">
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -199,7 +199,7 @@ export default function MediaPage() {
             )}
 
             {/* Zona de Carga / Upload Card con Drag and Drop nativo */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl">
                 <label className="block text-sm font-semibold uppercase text-slate-400 mb-3">
                     Subir Nuevo Audio
                 </label>
@@ -242,7 +242,7 @@ export default function MediaPage() {
             </div>
 
             {/* Lista de Audios */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl space-y-4">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
                     <Music className="w-5 h-5 text-blue-400" />
                     Biblioteca de Audios subidos ({audios.length})
